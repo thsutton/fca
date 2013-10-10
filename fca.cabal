@@ -1,0 +1,21 @@
+name:                fca
+version:             0.1.0.0
+synopsis:            Toy implementation of formal concept analysis in Haskell.
+homepage:            http://passingcuriosity.com/fca/
+license:             BSD3
+license-file:        LICENSE
+author:              Thomas Sutton
+maintainer:          me@thomas-sutton.id.au
+-- copyright:           
+category:            Data
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+executable fca
+  main-is:             Main.hs
+  -- other-modules:       
+  -- other-extensions:    
+  build-depends:       base >=4.6 && <4.7
+  hs-source-dirs:      src
+  default-language:    Haskell2010
