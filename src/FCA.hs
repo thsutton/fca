@@ -114,7 +114,7 @@ generateGraph :: AETable          -- ^ Context lattice table.
 generateGraph table omap amap =
   let list   = zip [0..] $ V.toList table
       list'  = zip [0..] $ V.toList $ restrictObjectLabels table
-  in toLazyText $ mconcat [ fromText "digraph {\n\trankdir=BT;\n\tnode[shape=point,labelloc=t];\nedge[arrowhead=none];\n\n"
+  in toLazyText $ mconcat [ fromText "digraph {\n\trankdir=BT;\n\tfontsize=10.0;\n\tpad=0.25;\n\tnode[shape=\"circle\",width=\"0.08\",labelloc=t];\n\tedge[arrowhead=none];\n\n"
                           , mconcat $ map graphNode $ list'
                           , mconcat $ map (graphEdges list) $ list
                           , fromText "}\n"
@@ -127,7 +127,7 @@ generateGraph table omap amap =
                                           (mconcat $ intersperse (fromText " ") $ map fromLazyText $ attrns ++ objns) `mappend`
                                           fromText "\""
                               in mconcat [ fromText "\tc" , decimal i
-                                         , fromText " [ "
+                                         , fromText " [label=\"\","
                                          , label
                                          , fromText " ];\n\n"
                                          ]
@@ -144,8 +144,10 @@ generateGraph table omap amap =
     covering :: Set Int
              -> [(Int, (Set Int, Set Int))]
              -> [(Int, (Set Int, Set Int))]
-    covering s ss = -- map (S.isProperSubsetOf) $
-                    filter (\(_,(_,o)) -> s `S.isProperSubsetOf` o) ss
+    covering s ss = let candidates = filter (localSubsetOf (1,(S.empty,s))) ss
+                        cover = filter (\c -> null $ filter ((flip localSubsetOf c)) candidates) candidates
+                    in cover
+      where localSubsetOf = \(_,(_,s)) (_,(_,t)) -> s `S.isProperSubsetOf` t
 
 -- | Select the maximal attribute in the context.
 --
