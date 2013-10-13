@@ -17,5 +17,9 @@ executable fca
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.6 && <4.7
+                     , bytestring >=0.10 && <0.11
+                     , cassava >=0.2 && <0.3
+                     , containers >= 0.5 && <0.6
+                     , vector >=0.10 && <0.11
   hs-source-dirs:      src
   default-language:    Haskell2010
