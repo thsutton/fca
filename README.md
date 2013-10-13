@@ -8,6 +8,8 @@ aphorisms:
 
 - The best way to learn is by teaching.
 
+**Please note**: This README is not an accurate description of the code.
+
 Basic Algorithm
 ---------------
 
