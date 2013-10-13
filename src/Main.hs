@@ -10,6 +10,8 @@ import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Data.Word
 
+import           FCA (main)
+
 -- | 32 bits ought to be enough for anyone.
 type Attributes = Word32
 
@@ -29,8 +31,8 @@ data Concept = Concept { extent :: Set Name
                        , intent :: Attributes
                        }
 
-main :: IO ()
-main = do
+main2 :: IO ()
+main2 = do
   input <- B.getContents
   case decode False input of
     Left err -> putStrLn err
@@ -43,3 +45,4 @@ main = do
 -- | Massage the input data so that it has attributes.
 massage :: Vector (Vector ByteString) -> Vector (ByteString)
 massage = V.map (V.head)
+
