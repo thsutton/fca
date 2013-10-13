@@ -191,17 +191,6 @@ insertAttr (attr, ext) table =
 
 -- * Utilities
 
--- | Compare sets using /subset/ ordering (kind of)
---
--- Note that the EQ case is pretty much entirely wrong as Ordering doesn't admit
--- the case where sets are not comparable.
-subsetOrder :: Ord e => Set e -> Set e -> Ordering
-subsetOrder s t = if S.isProperSubsetOf s t
-                  then LT
-                  else if S.isProperSubsetOf t s
-                       then GT
-                       else EQ
-
 -- | Find the smallest set containing an element.
 --
 -- This is partial.
