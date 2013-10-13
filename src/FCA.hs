@@ -133,7 +133,7 @@ generateGraph table omap amap =
                                          ]
     -- | Generate a @dot@ fragment for the edges of a node.
     graphEdges list (i, (as, os)) = let t = True
-                                        targets = covering i os list
+                                        targets = covering os $ take i list
                                         e i j = mconcat [ fromText "\tc", decimal i, fromText " -> c", decimal j, fromText ";\n"]
                                     in mconcat [ fromText "\t# Edges for c"
                                                , decimal i
@@ -141,7 +141,11 @@ generateGraph table omap amap =
                                                , mconcat $ map (e i) $ map (fst) targets
                                                ]
     -- | Find nodes which cover another.
-    covering i s ss = filter (\t@(j,(a,o)) -> j <= i && s `S.isProperSubsetOf` o) ss
+    covering :: Set Int
+             -> [(Int, (Set Int, Set Int))]
+             -> [(Int, (Set Int, Set Int))]
+    covering s ss = -- map (S.isProperSubsetOf) $
+                    filter (\(_,(_,o)) -> s `S.isProperSubsetOf` o) ss
 
 -- | Select the maximal attribute in the context.
 --
@@ -186,6 +190,17 @@ insertAttr (attr, ext) table =
                           in (t V.++) $ V.map (\x -> (S.empty, x)) new
 
 -- * Utilities
+
+-- | Compare sets using /subset/ ordering (kind of)
+--
+-- Note that the EQ case is pretty much entirely wrong as Ordering doesn't admit
+-- the case where sets are not comparable.
+subsetOrder :: Ord e => Set e -> Set e -> Ordering
+subsetOrder s t = if S.isProperSubsetOf s t
+                  then LT
+                  else if S.isProperSubsetOf t s
+                       then GT
+                       else EQ
 
 -- | Find the smallest set containing an element.
 --
