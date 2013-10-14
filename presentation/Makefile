@@ -1,7 +1,6 @@
 
 all:
-	pandoc --self-contained --css=presentation.css -t slidy -o presentation.html presentation.md
-	open presentation.html
+	pandoc --self-contained -m --css=presentation.css -t slidy -o presentation.html presentation.md
 
 clean:
 	rm -f *.html
