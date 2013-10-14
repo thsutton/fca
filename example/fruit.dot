@@ -1,0 +1,65 @@
+digraph {
+	rankdir=BT;
+	fontsize=10.0;
+	pad=0.25;
+	node[shape="circle",width="0.08",labelloc=t];
+	edge[arrowhead=none];
+
+	c0 [label="",xlabel="" ];
+
+	c1 [label="",xlabel="cy" ];
+
+	c2 [label="",xlabel="cg" ];
+
+	c3 [label="",xlabel="ta" ];
+
+	c4 [label="",xlabel="GD" ];
+
+	c5 [label="",xlabel="GS" ];
+
+	c6 [label="",xlabel="cr RD PL" ];
+
+	c7 [label="",xlabel="tc" ];
+
+	c8 [label="",xlabel="L" ];
+
+	c9 [label="",xlabel="Li" ];
+
+	c10 [label="",xlabel="co O M" ];
+
+	c11 [label="",xlabel="" ];
+
+	# Edges for c0
+	# Edges for c1
+	c1 -> c0;
+	# Edges for c2
+	c2 -> c0;
+	# Edges for c3
+	c3 -> c0;
+	# Edges for c4
+	c4 -> c1;
+	c4 -> c3;
+	# Edges for c5
+	c5 -> c2;
+	c5 -> c3;
+	# Edges for c6
+	c6 -> c3;
+	# Edges for c7
+	c7 -> c0;
+	# Edges for c8
+	c8 -> c1;
+	c8 -> c7;
+	# Edges for c9
+	c9 -> c2;
+	c9 -> c7;
+	# Edges for c10
+	c10 -> c7;
+	# Edges for c11
+	c11 -> c4;
+	c11 -> c5;
+	c11 -> c6;
+	c11 -> c8;
+	c11 -> c9;
+	c11 -> c10;
+}
+
