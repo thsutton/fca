@@ -1,0 +1,9 @@
+Name               Colour   Type
+-----------------  -------  -----
+Pink Lady          Pink     Apple
+Granny Smith       Green    Apple
+Golden Delicious   Yellow   Apple
+Red Delicious      Red      Apple
+Lemon              Yellow   Citrus
+Orange             Orange   Citrus
+Mandarin           Orange   Citrus
