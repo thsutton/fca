@@ -158,3 +158,16 @@ table > tfoot > tr.warning > th {
   background-color: #fcf8e3;
   border-color: #fbeed5;
 }
+
+/**
+ ** LaTeX Maths
+ **/
+table.displayequation {
+    font-size: 110%;
+    margin: 1em auto;
+}
+table.displayequation td,
+table.displayequation th {
+    border: none !important;
+    background: none !important;
+}
