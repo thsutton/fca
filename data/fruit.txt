@@ -7,3 +7,4 @@ Red Delicious      Red      Apple
 Lemon              Yellow   Citrus
 Orange             Orange   Citrus
 Mandarin           Orange   Citrus
+Lime               Green    Citrus
