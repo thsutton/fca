@@ -14,8 +14,6 @@ cabal-version:       >=1.10
 
 executable fca
   main-is:             Main.hs
-  other-modules:       FCA
-  -- other-extensions:    
   build-depends:       base >=4.6 && <4.7
                      , bytestring >=0.10 && <0.11
                      , cassava >=0.2 && <0.3
