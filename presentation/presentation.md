@@ -110,7 +110,7 @@ know what that means, but yeah.)
 
 [cassava]: http://hackage.haskell.org/package/cassava
 
-# Example
+# Example: Fruit Data
 
 Name               Colour   Type
 -----------------  -------  -----
@@ -123,9 +123,145 @@ Orange             Orange   Citrus
 Mandarin           Orange   Citrus
 Lime               Green    Citrus
 
-# The Fruit Lattice
+# Example: Fruit Context
+
+Obj   cy  cg  cr  co  ta  tc
+---   --  --  --  --  --  --
+GD    ☑                ☑    
+GS        ☑            ☑    
+RD            ☑        ☑    
+PL            ☑        ☑    
+L     ☑                    ☑
+O                 ☑        ☑
+M                 ☑        ☑
+Li        ☑                ☑
+
+# Example: Fruit Attribute/Extent Table
+
+
+     Attributes  Objects
+---  ----------  ---------------------
+  1              GD,GS,RD,PL,Le,O,M,Li
+  2  cy          GD,Le
+  3  cg          GS,Li
+  4  ta          GD,GS,RD,PL
+  5              GD
+  6              GS
+  7  cr          RD,PL
+  8  tc          Le,O,M,Li
+  9              Le
+ 10              Li
+ 11  co          O,M
+ 12              ∅
+
+
+# Example: Fruit Concept Lattice
 
 ![](../example/fruit.png)
+
+# Code: Types
+
+````{.haskell}
+type Name = Text
+
+type AttrId = Int
+type ObjId = Int
+
+-- | An attribute is an ID together with a set of objects which have the
+-- attribute.
+type Attribute = (AttrId, Set ObjId)
+
+-- | A Context is an incidence matrix between objects and attributes. It's
+-- attribute major.
+type Context = Vector (Attribute)
+
+-- | An AERow represents a point in the concept lattice with the given
+-- attributes and the extent.
+type AERow = (Set AttrId, Set ObjId)
+
+-- | An AETable is the internal datastructure of the algorithm.
+type AETable = Vector AERow
+````
+
+# Code: Main
+
+````{.haskell}
+parseContext :: Vector (Vector Name) -> (Context, Map ObjId Name, Map AttrId Name)
+buildAETable :: Context -> AETable
+generateGraph :: AETable          -- ^ Context lattice table.
+              -> Map ObjId Name   -- ^ Map from object ID to name.
+              -> Map AttrId Name  -- ^ Map from attribute ID to name.
+              -> Text
+
+main :: IO ()
+main = do
+  input <- BL.getContents
+  case decode False input of
+    Left err -> error err
+    Right csv -> let (ctx, omap, amap) = parseContext csv
+                     table = buildAETable ctx
+                     graph = generateGraph table omap amap
+                 in do
+                   T.putStrLn graph
+````
+
+# Code: Building the table
+
+````{.haskell}
+-- | Construct the attribute/extent table of a context.
+buildAETable :: Context -> AETable
+buildAETable ctx = let g = V.foldl (\s v-> S.union s $ snd v) S.empty ctx
+                       t = snd $ work ctx $ V.singleton (S.empty, g)
+                   in t V.++ V.singleton (S.empty, S.empty)
+  where
+    work :: Context -> AETable -> (Context, AETable)
+    work ctx table = maybe (ctx, table)
+                     (\(a, ctx') -> work ctx' $ insertAttr a table)
+                     (chooseMax ctx)
+
+-- | Insert a new attribute and it's extent into the table.
+insertAttr :: Attribute -> AETable -> AETable
+insertAttr (attr, ext) table =
+  case V.findIndex (\r -> ext == snd r) table of
+    -- Add the label to the existing row.
+    Just j -> labelAttr j attr table
+    -- Add a new row to the table.
+    Nothing -> addIntersects attr ext $ extendTable attr ext table
+  where
+    extendTable :: AttrId -> Set ObjId -> AETable -> AETable
+    extendTable a e t = V.snoc t (S.singleton a, e)
+    labelAttr j a t = let (attr, extent) = t V.! j
+                          r = (S.insert a attr, extent)
+                      in table V.// [(j, r)]
+    addIntersects :: AttrId -> Set ObjId -> AETable -> AETable
+    addIntersects a e t = let current = V.map (snd) t
+                              new = V.filter (\s -> (not $ S.null s) && (V.notElem s current)) $ V.map (S.intersection e) current
+                          in (t V.++) $ V.map (\x -> (S.empty, x)) new
+````
+
+# Code: LOLWUT
+
+````{.haskell}
+-- | Find the smallest set containing an element.
+--
+-- This is partial.
+smallestWith :: Ord e => e -> Set (Set e) -> Set e
+smallestWith e ss = let ss' = S.filter (S.member e) ss
+                    in head $ sortBy myCmp $ S.toList ss'
+  where myCmp x y = compare (S.size x) (S.size y)
+
+-- | Filter the elements @e@ of @s@ by whether or not @m@ maps @e@ to @s@.
+filterSetByMap :: Ord i => Set i -> Map i (Set i) -> Set i
+filterSetByMap s m = S.filter (\e -> (m M.! e) == s) s 
+
+-- | Find nodes which cover another.
+covering :: Set Int                     -- ^ Extent to cover.
+         -> [(Int, (Set Int, Set Int))] -- ^ Candidates.
+         -> [(Int, (Set Int, Set Int))]
+covering s ss = let ss' = filter (myCmp (1,(S.empty,s))) ss
+                in filter (\c -> null $ filter ((flip myCmp c)) ss') ss'
+  where myCmp = \(_,(_,s)) (_,(_,t)) -> s `S.isProperSubsetOf` t
+````
 
 # Sources
 

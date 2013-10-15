@@ -1,33 +1,34 @@
 digraph {
 	rankdir=BT;
-	fontsize=10.0;
 	pad=0.25;
-	node[shape="circle",width="0.08",labelloc=t];
+	ratio=expand;
+	size="8,4";
+	node[shape="circle",width="0.08",labelloc=t,fontsize=18.0];
 	edge[arrowhead=none];
 
-	c0 [label="",xlabel="" ];
+	c0 [label="",xlp="20,-72",xlabel=""];
 
-	c1 [label="",xlabel="cy" ];
+	c1 [label="",xlp="20,-72",xlabel=<cy> ];
 
-	c2 [label="",xlabel="cg" ];
+	c2 [label="",xlp="20,-72",xlabel=<cg> ];
 
-	c3 [label="",xlabel="ta" ];
+	c3 [label="",xlp="20,-72",xlabel=<ta> ];
 
-	c4 [label="",xlabel="GD" ];
+	c4 [label="",xlp="20,-72",xlabel=< <BR/>GD> ];
 
-	c5 [label="",xlabel="GS" ];
+	c5 [label="",xlp="20,-72",xlabel=< <BR/>GS> ];
 
-	c6 [label="",xlabel="cr RD PL" ];
+	c6 [label="",xlp="20,-72",xlabel=<cr<BR/>RD PL>];
 
-	c7 [label="",xlabel="tc" ];
+	c7 [label="",xlp="20,-72",xlabel=<tc> ];
 
-	c8 [label="",xlabel="L" ];
+	c8 [label="",xlp="20,-72",xlabel=< <BR/>Le> ];
 
-	c9 [label="",xlabel="Li" ];
+	c9 [label="",xlp="20,-72",xlabel=< <BR/>Li> ];
 
-	c10 [label="",xlabel="co O M" ];
+	c10 [label="",xlp="20,-72",xlabel=<co<BR/>O M> ];
 
-	c11 [label="",xlabel="" ];
+	c11 [label="",xlp="20,-72",xlabel="" ];
 
 	# Edges for c0
 	# Edges for c1
@@ -62,4 +63,3 @@ digraph {
 	c11 -> c9;
 	c11 -> c10;
 }
-
