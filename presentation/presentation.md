@@ -102,14 +102,6 @@ know what that means, but yeah.)
 	2. Each node has edges to it's *covering* nodes (immediate, proper
 	   supersets).
 
-# The Code
-
-- Parse CSV input using the [cassava][] package.
-- Use `containers` and `vector` for data representation.
-- (Investigate using `Data.Bits` instead of `Data.Set` in future.)
-
-[cassava]: http://hackage.haskell.org/package/cassava
-
 # Example: Fruit Data
 
 Name               Colour   Type
@@ -138,7 +130,6 @@ Li        ☑                ☑
 
 # Example: Fruit Attribute/Extent Table
 
-
      Attributes  Objects
 ---  ----------  ---------------------
   1              GD,GS,RD,PL,Le,O,M,Li
@@ -154,10 +145,29 @@ Li        ☑                ☑
  11  co          O,M
  12              ∅
 
+ Obj   cy  cg  cr  co  ta  tc
+ ---   --  --  --  --  --  --
+ GD    ☑                ☑    
+ GS        ☑            ☑    
+ RD            ☑        ☑    
+ PL            ☑        ☑    
+ L     ☑                    ☑
+ O                 ☑        ☑
+ M                 ☑        ☑
+ Li        ☑                ☑
+
 
 # Example: Fruit Concept Lattice
 
 ![](../example/fruit.png)
+
+# The Code
+
+- Parse CSV input using the [cassava][] package.
+- Use `containers` and `vector` for data representation.
+- (Investigate using `Data.Bits` instead of `Data.Set` in future.)
+
+[cassava]: http://hackage.haskell.org/package/cassava
 
 # Code: Types
 
@@ -219,7 +229,14 @@ buildAETable ctx = let g = V.foldl (\s v-> S.union s $ snd v) S.empty ctx
                      (\(a, ctx') -> work ctx' $ insertAttr a table)
                      (chooseMax ctx)
 
--- | Insert a new attribute and it's extent into the table.
+-- | Select the "maximal" attribute in the context.
+chooseMax :: Context -> Maybe (Attribute, Context)
+chooseMax ctx = fmap (flip vselect ctx) $ V.findIndex (f ctx) ctx
+  where
+    f ctx a = maybe True (const False) $
+              V.findIndex (\b-> (snd a) `S.isProperSubsetOf` (snd b)) ctx
+
+-- | Insert an attribute/extent into the table.
 insertAttr :: Attribute -> AETable -> AETable
 insertAttr (attr, ext) table =
   case V.findIndex (\r -> ext == snd r) table of
@@ -228,11 +245,11 @@ insertAttr (attr, ext) table =
     -- Add a new row to the table.
     Nothing -> addIntersects attr ext $ extendTable attr ext table
   where
-    extendTable :: AttrId -> Set ObjId -> AETable -> AETable
-    extendTable a e t = V.snoc t (S.singleton a, e)
     labelAttr j a t = let (attr, extent) = t V.! j
                           r = (S.insert a attr, extent)
                       in table V.// [(j, r)]
+    extendTable :: AttrId -> Set ObjId -> AETable -> AETable
+    extendTable a e t = V.snoc t (S.singleton a, e)
     addIntersects :: AttrId -> Set ObjId -> AETable -> AETable
     addIntersects a e t = let current = V.map (snd) t
                               new = V.filter (\s -> (not $ S.null s) && (V.notElem s current)) $ V.map (S.intersection e) current
@@ -242,9 +259,7 @@ insertAttr (attr, ext) table =
 # Code: LOLWUT
 
 ````{.haskell}
--- | Find the smallest set containing an element.
---
--- This is partial.
+-- | Find the smallest set containing an element. NB: partial!
 smallestWith :: Ord e => e -> Set (Set e) -> Set e
 smallestWith e ss = let ss' = S.filter (S.member e) ss
                     in head $ sortBy myCmp $ S.toList ss'
