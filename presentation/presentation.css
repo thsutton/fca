@@ -5,6 +5,10 @@ img {
     margin: 0 auto;
 }
 
+
+/**
+ ** Bootstrap table
+ **/
 table {
   border-collapse: collapse;
   border-spacing: 0;
@@ -170,4 +174,9 @@ table.displayequation td,
 table.displayequation th {
     border: none !important;
     background: none !important;
+}
+
+#example-fruit-attributeextent-table table {
+	float: left;
+	margin-right: 2em;
 }
