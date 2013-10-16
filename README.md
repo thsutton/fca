@@ -1,9 +1,11 @@
 Formal Concept Analysis
 =======================
 
+[![Build Status](https://travis-ci.org/thsutton/fca.png?branch=master)](https://travis-ci.org/thsutton/fca)
+
 This repository contains a small implementation of an algorithm to perform
 *formal concept analysis* as well as a presentation about it to be given at the
-FP-Syd functional programming group in Sydney on 16 Oct 2013.
+FP-Syd functional programming group in Sydney in November 2013.
 
 Software
 --------
