@@ -22,7 +22,7 @@ import qualified Data.Text.Lazy.IO    as T
 main :: IO ()
 main = do
   input <- BL.getContents
-  case decode False input of
+  case decode NoHeader input of
     Left err -> error err
     Right csv -> let (ctx, omap, amap) = parseContext csv
                      table = buildAETable ctx
