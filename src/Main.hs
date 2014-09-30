@@ -16,8 +16,8 @@ module Main where
 import qualified Data.ByteString.Lazy as BL
 import           Data.Csv
 import           Data.FCA
-import qualified Data.Text.Lazy as T
-import qualified Data.Text.Lazy.IO as T
+import qualified Data.Text.Lazy       as T
+import qualified Data.Text.Lazy.IO    as T
 
 main :: IO ()
 main = do

@@ -13,23 +13,23 @@ helped me (rather: is helping me) to understand to topic.
 -}
 module Data.FCA where
 
-import           Data.ByteString (ByteString)
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as BL
-import           Data.Csv hiding (Name)
-import           Data.List (intersperse, sortBy)
-import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
+import           Data.ByteString            (ByteString)
+import qualified Data.ByteString            as B
+import qualified Data.ByteString.Lazy       as BL
+import           Data.Csv                   hiding (Name)
+import           Data.List                  (intersperse, sortBy)
+import           Data.Map.Strict            (Map)
+import qualified Data.Map.Strict            as M
 import           Data.Monoid
-import           Data.Set (Set)
-import qualified Data.Set as S
-import           Data.Text.Lazy (Text)
-import qualified Data.Text.Lazy as T
-import qualified Data.Text.Lazy.IO as T
+import           Data.Set                   (Set)
+import qualified Data.Set                   as S
+import           Data.Text.Lazy             (Text)
+import qualified Data.Text.Lazy             as T
 import           Data.Text.Lazy.Builder
 import           Data.Text.Lazy.Builder.Int
-import           Data.Vector (Vector)
-import qualified Data.Vector as V
+import qualified Data.Text.Lazy.IO          as T
+import           Data.Vector                (Vector)
+import qualified Data.Vector                as V
 
 -- * Data types
 
@@ -159,7 +159,7 @@ restrictObjectLabels table = let es = V.foldl (flip S.insert) S.empty $ V.map (s
 -- If the extent is already present, the existing row will be labelled with the
 -- additional attribute; otherwise, a new row will be added.
 insertAttr :: Attribute -> AETable -> AETable
-insertAttr (attr, ext) table = 
+insertAttr (attr, ext) table =
   let t = table
       i = V.findIndex (\r -> ext == snd r) table
   in case i of
@@ -195,7 +195,7 @@ filterSetByMap :: Ord i =>
                   Set i -- ^ The set to filter
                -> Map i (Set i) -- ^ The map
                -> Set i
-filterSetByMap s m = S.filter (\e -> (m M.! e) == s) s 
+filterSetByMap s m = S.filter (\e -> (m M.! e) == s) s
 
 -- | Extract and remove the element with the specified index from a vector.
 vselect :: Int -- ^ The index.
@@ -208,7 +208,7 @@ vselect i v = (v V.! i , V.ifilter (\j _ -> i /= j) v)
 -- | A piece of test data.
 v :: Context
 v = V.fromList [ (1, S.fromList [2,3])
-               , (2, S.fromList [1,2,3]) 
+               , (2, S.fromList [1,2,3])
                , (3, S.fromList [1,2])
                , (4, S.fromList [3])
                , (5, S.fromList [2,3,5])
