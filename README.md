@@ -1,7 +1,10 @@
 Formal Concept Analysis
 =======================
 
-[![Build Status](https://travis-ci.org/thsutton/fca.png?branch=master)](https://travis-ci.org/thsutton/fca)
+[![Build Status][badge]][build-log]
+
+[build-log]: https://travis-ci.org/thsutton/fca
+[badge]: https://travis-ci.org/thsutton/fca.png?branch=master
 
 This repository contains a small implementation of an algorithm to
 analyse a dataset and construct a concept lattice using an algorithm
