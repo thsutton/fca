@@ -11,11 +11,9 @@ on data sets.
 module Main where
 
 import           Control.Applicative
-import           Control.Monad
 import qualified Data.ByteString.Lazy as BL
 import           Data.Csv hiding (Parser)
 import           Data.FCA
-import qualified Data.Text.Lazy       as T
 import qualified Data.Text.Lazy.IO    as T
 import           Options.Applicative
 import           System.IO
@@ -31,8 +29,8 @@ data Options = Options
     { optVerbose :: Bool -- ^ Be verbose.
     , optHeader  :: Bool -- ^ Data includes headers.
     , optFormat  :: Format -- ^ Input data format.
-    , optOutput  :: Maybe FilePath -- ^ Output to file.
-    , optInput   :: Maybe FilePath -- ^ Input from file.
+    , optOutput  :: Maybe String -- ^ Output to file.
+    , optInput   :: Maybe String -- ^ Input from file.
     }
   deriving (Eq, Ord, Show)
 
@@ -51,27 +49,28 @@ optionsP = Options <$> verboseP
            long "header"
         <> short 'H'
         <> help "Input contains headers."
-    outputP = option (return . Just) $
+    outputP = option (Just <$> str) $
            long "output"
         <> short 'o'
         <> help "Output file."
         <> metavar "FILE"
         <> value Nothing
-    inputP = argument (return . Just) $
+    inputP = argument (Just <$> str) $
            metavar "FILE"
         <> value Nothing
-    formatP = option readFmt $
+    formatP = option readFmtP $
            long "format"
         <> short 'f'
         <> help "Input data format."
         <> metavar "av|eav|tab"
         <> value EAV
         <> showDefault
-    readFmt :: (Monad m, MonadPlus m) => String -> m Format
-    readFmt "ea" = return EA
+    readFmtP :: ReadM Format
+    readFmtP = eitherReader readFmt
+    readFmt "ea"  = return EA
     readFmt "eav" = return EAV
     readFmt "tab" = return Tabular
-    readFmt _ = mzero
+    readFmt _     = Left "Format must be: ea, eav, tab"
 
 -- | Open input and output handles based on command-line options.
 getHandles :: Options -> IO (Handle, Handle)

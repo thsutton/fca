@@ -30,7 +30,8 @@ executable fca
                      , bytestring
                      , cassava
                      , containers
-                     , optparse-applicative
+                     , mtl
+                     , optparse-applicative >= 0.11
                      , text
                      , vector
                      , fca
