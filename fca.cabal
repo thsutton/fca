@@ -30,6 +30,7 @@ executable fca
                      , bytestring
                      , cassava
                      , containers
+                     , optparse-applicative
                      , text
                      , vector
                      , fca

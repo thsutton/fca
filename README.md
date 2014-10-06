@@ -27,6 +27,14 @@ cabal haddock --executables
 cabal install
 ````
 
+Usage
+-----
+
+The package includes a library which implements and exports almost all
+functionality and an executable, called `fca` which provides a command-line
+interface.
+
+
 Presentation
 ------------
 
