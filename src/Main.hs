@@ -160,7 +160,7 @@ main = do
     (inH, outH) <- getHandles opt
 
     -- Read the input data.
-    frame@(Frame ctx omap amap) <- getReader opt inH
+    Frame ctx omap amap <- getReader opt inH
     hClose inH
 
     -- Run the FCA algorithm on the context.
