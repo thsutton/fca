@@ -72,7 +72,6 @@ parseContext :: Vector (Vector Name) -> (Context, Map ObjId Name, Map AttrId Nam
 parseContext csv = let hd      = V.tail $ V.head csv
                        bd      = V.map V.tail $ V.tail csv
                        os      = V.map V.head $ V.tail csv
-                       no      = V.length bd
                        na      = V.length hd
                        ctx     = V.generate na (\a -> (a, V.ifoldl (\s i v -> if (T.null $ v V.! a) then s else S.insert i s) S.empty bd))
                        objmap  = V.ifoldl (\m i n -> M.insert i n m) (M.singleton (-9999) "_") os
@@ -203,13 +202,3 @@ vselect :: Int -- ^ The index.
         -> (a, Vector a) -- ^ The value and new vector.
 vselect i v = (v V.! i , V.ifilter (\j _ -> i /= j) v)
 
--- * Tests
-
--- | A piece of test data.
-v :: Context
-v = V.fromList [ (1, S.fromList [2,3])
-               , (2, S.fromList [1,2,3])
-               , (3, S.fromList [1,2])
-               , (4, S.fromList [3])
-               , (5, S.fromList [2,3,5])
-               ]
