@@ -26,6 +26,7 @@ import           Data.Text.Lazy.Builder
 import           Data.Text.Lazy.Builder.Int
 import           Data.Vector                (Vector)
 import qualified Data.Vector                as V
+import qualified Data.Vector.Algorithms.Heap as V
 
 -- * Data types
 
@@ -99,14 +100,35 @@ parseEAV csv =
 -- Note that this function assumes that the input data is rectangular.
 parseTabular :: Vector (Vector Name) -> Frame
 parseTabular csv =
-    let hd      = V.tail $ V.head csv
-        bd      = V.map V.tail $ V.tail csv
-        os      = V.map V.head $ V.tail csv
-        na      = V.length hd
-        ctx     = V.generate na (\a -> (a, V.ifoldl (\s i v -> if (T.null $ v V.! a) then s else S.insert i s) S.empty bd))
-        objmap  = V.ifoldl (\m i n -> M.insert i n m) (M.singleton (-9999) "_") os
-        attrmap = V.ifoldl (\m i n -> M.insert i n m) M.empty hd
-    in Frame ctx objmap attrmap
+    let as      = V.modify V.sort . V.tail $ V.head csv
+        os      = V.modify V.sort . V.map V.head $ V.tail csv
+        -- Build maps to translate names to IDs for objects and attributes.
+        anames  = V.fromList . nub . V.toList $ as
+        onames  = V.fromList . nub . V.toList $ os
+        (atr,amap) = V.ifoldl translationMaps (M.empty, M.empty) $ anames
+        (otr,omap) = V.ifoldl translationMaps (M.empty, M.empty) $ onames
+        -- Build the context uses the data and the translation maps.
+        na      = V.length as
+        ctx     = V.generate na (attr atr otr csv)
+     in Frame ctx omap amap
+  where
+    -- | Extend a pair of translation maps with a new name and index.
+    translationMaps (it,ot) i n = (M.insert n i it, M.insert i n ot)
+
+    isSet :: Text -> Bool
+    isSet = T.null
+
+    -- | Generate the extent set for an attribute.
+    attr
+        :: Map Text AttrId
+        -> Map Text ObjId
+        -> Vector (Vector Text)
+        -> AttrId
+        -> (AttrId, Set ObjId)
+    attr amap omap rows a =
+        let col = V.tail $ rows V.! (a + 1)
+            extent = V.ifoldl (\s i row -> if (isSet $ row V.! a) then s else S.insert i s) S.empty rows
+        in (a, extent)
 
 -- | Construct the attribute/extent table of a context.
 buildAETable :: Context -> AETable
