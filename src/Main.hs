@@ -44,37 +44,41 @@ optionsP = Options <$> verboseP
                    <*> outputP
                    <*> inputP
   where
-    verboseP = switch $ 
+    verboseP = switch $
            long "verbose"
         <> short 'v'
         <> help "Produce verbose output."
+
     headerP = switch $
            long "header"
         <> short 'H'
         <> help "Input contains headers."
+
     outputP = option (Just <$> str) $
            long "output"
         <> short 'o'
         <> help "Output file."
         <> metavar "FILE"
         <> value Nothing
+
     inputP = argument (Just <$> str) $
            metavar "FILE"
         <> value Nothing
-    formatP = option readFmtP $
+
+    formatP = option (eitherReader readFmt) $
            long "format"
         <> short 'f'
         <> help "Input data format."
         <> metavar "av|eav|tab"
         <> value EAV
         <> showDefault
-    readFmtP :: ReadM Format
-    readFmtP = eitherReader readFmt
-    readFmt "ea"  = return EA
-    readFmt "eav" = return EAV
-    readFmt "tab" = return Tabular
-    readFmt "tabular" = return Tabular
-    readFmt _     = Left "Format must be: ea, eav, tabular"
+
+    readFmt :: String -> Either String Format
+    readFmt "ea"      = Right EA
+    readFmt "eav"     = Right EAV
+    readFmt "tab"     = Right Tabular
+    readFmt "tabular" = Right Tabular
+    readFmt _         = Left "Format must be: ea, eav, tabular"
 
 -- | Open input and output handles based on command-line options.
 getHandles :: Options -> IO (Handle, Handle)
@@ -83,38 +87,37 @@ getHandles Options{..} = do
     outH <- maybe (return stdout) (flip openFile WriteMode) optOutput
     return (inH, outH)
 
--- * Reading data
-
 -- | Get a function to read data in the specified format.
 getReader :: Options -> (Handle -> IO Frame)
-getReader opt = case optFormat opt of
-    EAV -> readEAV opt
-    EA -> readEA opt
-    Tabular -> readTabular opt
+getReader opt =
+    case optFormat opt of
+        EAV -> readEAV opt
+        EA -> readEA opt
+        Tabular -> readTabular opt
+  where
+    -- | Read data in entity-attribute-value format.
+    readEAV :: Options -> Handle -> IO Frame
+    readEAV _ inH = do
+        input <- BL.hGetContents inH
+        case decode NoHeader input of
+            Left err -> error err
+            Right csv -> return $ parseEAV csv
 
--- | Read data in entity-attribute-value format.
-readEAV :: Options -> Handle -> IO Frame
-readEAV _ inH = do
-    input <- BL.hGetContents inH
-    case decode NoHeader input of
-        Left err -> error err
-        Right csv -> return $ parseEAV csv
+    -- | Read data in entity-attribute format.
+    readEA :: Options -> Handle -> IO Frame
+    readEA _ inH = do
+        input <- BL.hGetContents inH
+        case decode NoHeader input of
+            Left err -> error err
+            Right csv -> return $ parseEA csv
 
--- | Read data in entity-attribute format.
-readEA :: Options -> Handle -> IO Frame
-readEA _ inH = do
-    input <- BL.hGetContents inH
-    case decode NoHeader input of
-        Left err -> error err
-        Right csv -> return $ parseEA csv
-
--- | Read data in tabular format.
-readTabular :: Options -> Handle -> IO Frame
-readTabular _ inH = do
-    input <- BL.hGetContents inH
-    case decode NoHeader input of
-        Left err -> error err
-        Right csv -> return $ parseTabular csv
+    -- | Read data in tabular format.
+    readTabular :: Options -> Handle -> IO Frame
+    readTabular _ inH = do
+        input <- BL.hGetContents inH
+        case decode NoHeader input of
+            Left err -> error err
+            Right csv -> return $ parseTabular csv
 
 main :: IO ()
 main = do
