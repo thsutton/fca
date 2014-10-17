@@ -2,3 +2,5 @@
 /.cabal-sandbox/
 /cabal.sandbox.config
 /tags
+/*.png
+/*.pdf
