@@ -13,13 +13,10 @@ helped me (rather: is helping me) to understand to topic.
 -}
 module Data.FCA where
 
-import           Data.ByteString            (ByteString)
-import qualified Data.ByteString            as B
-import qualified Data.ByteString.Lazy       as BL
-import           Data.Csv                   hiding (Name)
-import           Data.List                  (intersperse, sortBy)
+import           Data.List                  (intersperse, sort, sortBy, nub)
 import           Data.Map.Strict            (Map)
 import qualified Data.Map.Strict            as M
+import           Data.Maybe
 import           Data.Monoid
 import           Data.Set                   (Set)
 import qualified Data.Set                   as S
@@ -27,7 +24,6 @@ import           Data.Text.Lazy             (Text)
 import qualified Data.Text.Lazy             as T
 import           Data.Text.Lazy.Builder
 import           Data.Text.Lazy.Builder.Int
-import qualified Data.Text.Lazy.IO          as T
 import           Data.Vector                (Vector)
 import qualified Data.Vector                as V
 
@@ -60,23 +56,57 @@ type AETable = Vector AERow
 -- represent them in the lattice.
 type AERow = (Set AttrId, Set ObjId)
 
+-- | A 'Frame' couples a 'Context' together with the maps to translate object
+-- and attribute IDs back to input strings.
+data Frame = Frame
+    { frameContext :: Context
+    , frameObjects :: Map ObjId Name
+    , frameAttributes :: Map AttrId Name
+    }
+  deriving (Show, Eq)
+
 -- * Internal
 
--- | Parse CSV data into a context.
+-- | Build maps to translate unique 'Text' values to and from 'Int's.
+toMap :: Vector Text -> (Map Int Text, Map Text Int)
+toMap v =
+    let l = zip [0..] $ nub $ V.toList v
+        it = foldl (\m (i,n)-> M.insert i n m) M.empty l
+        ti = foldl (\m (i,n)-> M.insert n i m) M.empty l
+    in (it, ti)
+
+-- | Parse entity-attribute formatted data into a 'Frame'.
+parseEA :: Vector (Text, Text) -> Frame
+parseEA csv =
+    let (omap, romap) = toMap $ V.map fst csv
+        (amap, ramap) = toMap $ V.map snd csv
+        fn (o,a) m = M.alter (Just . maybe (S.singleton o) (S.insert o)) a m
+        ctx' = V.foldr fn M.empty csv
+        ctx = V.fromList $ sort $ map (\(k,v) -> (fromJust (M.lookup k ramap), S.map (fromJust . flip M.lookup romap) v )) $ M.toList ctx'
+    in Frame ctx omap amap
+
+-- | Parse entity-attribute-value formated data into a 'Frame'.
+parseEAV :: (Vector (Name, Name, Name)) -> Frame
+parseEAV csv =
+    let csv' = V.map (\(n,a,v) -> (n, a <> v)) csv
+    in parseEA csv'
+
+-- | Parse tabular formatted data into a 'Frame'.
 --
 -- This function converts a vector of object-records into a context and a pair
 -- of maps which can be used to recover the human-readable names for output.
 --
 -- Note that this function assumes that the input data is rectangular.
-parseContext :: Vector (Vector Name) -> (Context, Map ObjId Name, Map AttrId Name)
-parseContext csv = let hd      = V.tail $ V.head csv
-                       bd      = V.map V.tail $ V.tail csv
-                       os      = V.map V.head $ V.tail csv
-                       na      = V.length hd
-                       ctx     = V.generate na (\a -> (a, V.ifoldl (\s i v -> if (T.null $ v V.! a) then s else S.insert i s) S.empty bd))
-                       objmap  = V.ifoldl (\m i n -> M.insert i n m) (M.singleton (-9999) "_") os
-                       attrmap = V.ifoldl (\m i n -> M.insert i n m) M.empty hd
-                   in (ctx, objmap, attrmap)
+parseTabular :: Vector (Vector Name) -> Frame
+parseTabular csv =
+    let hd      = V.tail $ V.head csv
+        bd      = V.map V.tail $ V.tail csv
+        os      = V.map V.head $ V.tail csv
+        na      = V.length hd
+        ctx     = V.generate na (\a -> (a, V.ifoldl (\s i v -> if (T.null $ v V.! a) then s else S.insert i s) S.empty bd))
+        objmap  = V.ifoldl (\m i n -> M.insert i n m) (M.singleton (-9999) "_") os
+        attrmap = V.ifoldl (\m i n -> M.insert i n m) M.empty hd
+    in Frame ctx objmap attrmap
 
 -- | Construct the attribute/extent table of a context.
 buildAETable :: Context -> AETable
@@ -201,4 +231,3 @@ vselect :: Int -- ^ The index.
         -> Vector a -- ^ The vector.
         -> (a, Vector a) -- ^ The value and new vector.
 vselect i v = (v V.! i , V.ifilter (\j _ -> i /= j) v)
-
