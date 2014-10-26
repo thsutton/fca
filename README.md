@@ -60,15 +60,16 @@ concatenated to form an attribute suitable for processing.
 columns; the header row and column contain the names, and a non-empty cell
 represents the presence of an attribute at an object.
 
-Examples of the three formats can be found in the `data/` directory:
+Two examples data sets, each in all three formats, can be found in the `data/`
+directory:
 
-- `fruit.txt` contains a summary of the data;
+- The `.txt` file contains a summary of the data;
 
-- `fruit.tab` contains the tabular format;
+- The `.tab` file contains the tabular format;
 
-- `fruit.ea` contains the entity-attribute format; and
+- The `.ea` file contains the entity-attribute format; and
 
-- `fruit.eav` contains the entity-attribute-value format.
+- The `.eav` file contains the entity-attribute-value format.
 
 In all three cases, the object and attribute names have been abbreviated and,
 when processed, result in the same output.
