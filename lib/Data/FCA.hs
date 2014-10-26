@@ -13,19 +13,20 @@ helped me (rather: is helping me) to understand to topic.
 -}
 module Data.FCA where
 
-import           Data.List                  (intersperse, sort, sortBy, nub)
-import           Data.Map.Strict            (Map)
-import qualified Data.Map.Strict            as M
+import           Data.List                   (intersperse, nub, sort, sortBy)
+import           Data.Map.Strict             (Map)
+import qualified Data.Map.Strict             as M
 import           Data.Maybe
 import           Data.Monoid
-import           Data.Set                   (Set)
-import qualified Data.Set                   as S
-import           Data.Text.Lazy             (Text)
-import qualified Data.Text.Lazy             as T
+import           Data.Set                    (Set)
+import qualified Data.Set                    as S
+import           Data.Text.Lazy              (Text)
+import qualified Data.Text.Lazy              as T
 import           Data.Text.Lazy.Builder
 import           Data.Text.Lazy.Builder.Int
-import           Data.Vector                (Vector)
-import qualified Data.Vector                as V
+import           Data.Vector                 (Vector)
+import qualified Data.Vector                 as V
+import qualified Data.Vector.Algorithms.Heap as V
 
 -- * Data types
 
@@ -59,8 +60,8 @@ type AERow = (Set AttrId, Set ObjId)
 -- | A 'Frame' couples a 'Context' together with the maps to translate object
 -- and attribute IDs back to input strings.
 data Frame = Frame
-    { frameContext :: Context
-    , frameObjects :: Map ObjId Name
+    { frameContext    :: Context
+    , frameObjects    :: Map ObjId Name
     , frameAttributes :: Map AttrId Name
     }
   deriving (Show, Eq)
@@ -68,9 +69,9 @@ data Frame = Frame
 -- * Internal
 
 -- | Build maps to translate unique 'Text' values to and from 'Int's.
-toMap :: Vector Text -> (Map Int Text, Map Text Int)
-toMap v =
-    let l = zip [0..] $ nub $ V.toList v
+toTranslation :: Vector Text -> (Map Int Text, Map Text Int)
+toTranslation v =
+    let l = zip [0..] $ sort $ nub $ V.toList v
         it = foldl (\m (i,n)-> M.insert i n m) M.empty l
         ti = foldl (\m (i,n)-> M.insert n i m) M.empty l
     in (it, ti)
@@ -78,8 +79,8 @@ toMap v =
 -- | Parse entity-attribute formatted data into a 'Frame'.
 parseEA :: Vector (Text, Text) -> Frame
 parseEA csv =
-    let (omap, romap) = toMap $ V.map fst csv
-        (amap, ramap) = toMap $ V.map snd csv
+    let (omap, romap) = toTranslation $ V.map fst csv
+        (amap, ramap) = toTranslation $ V.map snd csv
         fn (o,a) m = M.alter (Just . maybe (S.singleton o) (S.insert o)) a m
         ctx' = V.foldr fn M.empty csv
         ctx = V.fromList $ sort $ map (\(k,v) -> (fromJust (M.lookup k ramap), S.map (fromJust . flip M.lookup romap) v )) $ M.toList ctx'
@@ -99,14 +100,20 @@ parseEAV csv =
 -- Note that this function assumes that the input data is rectangular.
 parseTabular :: Vector (Vector Name) -> Frame
 parseTabular csv =
-    let hd      = V.tail $ V.head csv
-        bd      = V.map V.tail $ V.tail csv
-        os      = V.map V.head $ V.tail csv
-        na      = V.length hd
-        ctx     = V.generate na (\a -> (a, V.ifoldl (\s i v -> if (T.null $ v V.! a) then s else S.insert i s) S.empty bd))
-        objmap  = V.ifoldl (\m i n -> M.insert i n m) (M.singleton (-9999) "_") os
-        attrmap = V.ifoldl (\m i n -> M.insert i n m) M.empty hd
-    in Frame ctx objmap attrmap
+    let attrs = V.toList . V.tail . V.head $ csv
+        values = concatMap (convert attrs) . V.toList . V.tail $ csv
+    in parseEA . V.fromList $ values
+  where
+    convert :: [Text] -> Vector Text -> [(Text, Text)]
+    convert attrs object =
+        let obj   = V.head object
+            vals  = V.toList . V.tail $ object
+            pairs = map extract . filter (not . T.null . thrd) $ zip3 (repeat obj) attrs vals
+        in pairs
+    thrd :: (a,b,c) -> c
+    thrd (_,_,c) = c
+    extract :: (a,b,c) -> (a,b)
+    extract (a,b,_) = (a,b)
 
 -- | Construct the attribute/extent table of a context.
 buildAETable :: Context -> AETable

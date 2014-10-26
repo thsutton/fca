@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards   #-}
 {- |
 Module: Main
 Maintainer: Thomas Sutton
@@ -12,12 +12,12 @@ module Main where
 
 import           Control.Applicative
 import qualified Data.ByteString.Lazy as BL
-import           Data.Csv hiding (Parser, Name)
+import           Data.Csv             hiding (Name, Parser)
 import qualified Data.Text.Lazy.IO    as T
 import           Options.Applicative
 import           System.IO
 
-import           Data.FCA
+import Data.FCA
 
 -- | Options for invocation, generally constructed from command-line options.
 data Options = Options
@@ -38,8 +38,8 @@ data Format
 
 -- | Parser 'Options' from command-line arguments.
 optionsP :: Parser Options
-optionsP = Options <$> verboseP
-                   <*> headerP
+optionsP = Options <$> pure False
+                   <*> pure True
                    <*> formatP
                    <*> outputP
                    <*> inputP
@@ -57,19 +57,20 @@ optionsP = Options <$> verboseP
     outputP = option (Just <$> str) $
            long "output"
         <> short 'o'
-        <> help "Output file."
+        <> help "Write output to FILE. (default: stdout)"
         <> metavar "FILE"
         <> value Nothing
 
     inputP = argument (Just <$> str) $
            metavar "FILE"
+        <> help "Read input from FILE. (default: stdin)"
         <> value Nothing
 
     formatP = option (eitherReader readFmt) $
            long "format"
         <> short 'f'
         <> help "Input data format."
-        <> metavar "av|eav|tab"
+        <> metavar "ea|eav|tab"
         <> value EAV
         <> showDefault
 
@@ -138,6 +139,6 @@ main = do
   where
     opts = info (helper <*> optionsP)
         ( fullDesc
-        <> progDesc "Perform formal concept analysis a data set."
+        <> progDesc "Generate the concept lattice which describs a data set."
         <> header "fca - formal concept analysis"
         )

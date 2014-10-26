@@ -1,4 +1,4 @@
-SOURCES=$(shell find . -mindepth 2 -name '*.hs' -type f)
+SOURCES=$(shell find * -mindepth 1 -name '*.hs' -type f)
 
 HOTHASKTAGS=$(shell which hothasktags 2>/dev/null)
 CTAGS=$(if $(HOTHASKTAGS),$(HOTHASKTAGS),/bin/false)
