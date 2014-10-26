@@ -89,7 +89,7 @@ getHandles Options{..} = do
     return (inH, outH)
 
 -- | Get a function to read data in the specified format.
-getReader :: Options -> (Handle -> IO Frame)
+getReader :: Options -> Handle -> IO Frame
 getReader opt =
     case optFormat opt of
         EAV -> readEAV opt

@@ -113,8 +113,6 @@ formatsSpec = do
 
             eaG `shouldBe` eavG
 
-
-
         it "should result in the same graph for EA and TAB input" $ do
             -- Open all three input files.
             eaH  <- openFile "data/fruit.ea" ReadMode
@@ -162,6 +160,5 @@ formatsSpec = do
             eavG `shouldBe` tabG
 
 main :: IO ()
-main = do
-    hspec formatsSpec
+main = hspec formatsSpec
 

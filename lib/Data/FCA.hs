@@ -13,7 +13,10 @@ helped me (rather: is helping me) to understand to topic.
 -}
 module Data.FCA where
 
-import           Data.List                   (intersperse, nub, sort, sortBy)
+import           Data.Function
+import           Data.Functor
+import           Data.List                   (intersperse, minimumBy, nub,
+                                              sort, sortBy)
 import           Data.Map.Strict             (Map)
 import qualified Data.Map.Strict             as M
 import           Data.Maybe
@@ -45,7 +48,7 @@ type Attribute = (AttrId, Set ObjId)
 
 -- | A Context is an incidence matrix between objects and attributes. It's
 -- attribute major.
-type Context = Vector (Attribute)
+type Context = Vector Attribute
 
 -- | An AETable is the internal datastructure of the algorithm.
 type AETable = Vector AERow
@@ -87,7 +90,7 @@ parseEA csv =
     in Frame ctx omap amap
 
 -- | Parse entity-attribute-value formated data into a 'Frame'.
-parseEAV :: (Vector (Name, Name, Name)) -> Frame
+parseEAV :: Vector (Name, Name, Name) -> Frame
 parseEAV csv =
     let csv' = V.map (\(n,a,v) -> (n, a <> v)) csv
     in parseEA csv'
@@ -138,8 +141,8 @@ generateGraph table omap amap =
   let list   = zip [0..] $ V.toList table
       list'  = zip [0..] $ V.toList $ restrictObjectLabels table
   in toLazyText $ mconcat [ fromText "digraph {\n\trankdir=BT;\n\tfontsize=10.0;\n\tpad=0.25;\n\tnode[shape=\"circle\",width=\"0.08\",labelloc=t];\n\tedge[arrowhead=none];\n\n"
-                          , mconcat $ map graphNode $ list'
-                          , mconcat $ map (graphEdges list) $ list
+                          , mconcat $ map graphNode list'
+                          , mconcat $ map (graphEdges list) list
                           , fromText "}\n"
                           ]
   where
@@ -147,7 +150,7 @@ generateGraph table omap amap =
     graphNode (i, (as, os)) = let attrns = map (amap M.!) $ S.toList as
                                   objns = map (omap M.!) $ S.toList os
                                   label = fromText "xlabel=\"" `mappend`
-                                          (mconcat $ intersperse (fromText " ") $ map fromLazyText $ attrns ++ objns) `mappend`
+                                          (mconcat . intersperse (fromText " ") $ map fromLazyText $ attrns ++ objns) `mappend`
                                           fromText "\""
                               in mconcat [ fromText "\tc" , decimal i
                                          , fromText " [label=\"\","
@@ -161,30 +164,32 @@ generateGraph table omap amap =
                                     in mconcat [ fromText "\t# Edges for c"
                                                , decimal i
                                                , fromText "\n"
-                                               , mconcat $ map (e i) $ map (fst) targets
+                                               , mconcat $ map (e i . fst) targets
                                                ]
     -- | Find nodes which cover another.
     covering :: Set Int
              -> [(Int, (Set Int, Set Int))]
              -> [(Int, (Set Int, Set Int))]
-    covering s ss = let candidates = filter (localSubsetOf (1,(S.empty,s))) ss
-                        cover = filter (\c -> null $ filter ((flip localSubsetOf c)) candidates) candidates
-                    in cover
-      where localSubsetOf = \(_,(_,s)) (_,(_,t)) -> s `S.isProperSubsetOf` t
+    covering s ss =
+        let candidates = filter (localSubsetOf (1,(S.empty,s))) ss
+            cover = filter (\c -> not $ any (flip localSubsetOf c) candidates) candidates
+        in cover
+      where
+        localSubsetOf (_,(_,s)) (_,(_,t)) = s `S.isProperSubsetOf` t
 
 -- | Select the maximal attribute in the context.
 --
 -- Here, maximal means is not a proper subset of any other element.
 chooseMax :: Context -> Maybe (Attribute, Context)
-chooseMax ctx = fmap (flip vselect ctx) $ V.findIndex (f ctx) ctx
+chooseMax ctx = flip vselect ctx <$> V.findIndex (f ctx) ctx
   where
-    f ctx a = maybe True (const False) $
-              V.findIndex (\b-> (snd a) `S.isProperSubsetOf` (snd b)) ctx
+    f ctx a = isNothing $
+              V.findIndex (\b-> snd a `S.isProperSubsetOf` snd b) ctx
 
 -- | Filter the labels in a table such that nodes are mentioned only in the
 -- smallest extent which contains them.
-restrictObjectLabels table = let es = V.foldl (flip S.insert) S.empty $ V.map (snd) table
-                                 os = S.foldl (S.union) S.empty es
+restrictObjectLabels table = let es = V.foldl (flip S.insert) S.empty $ V.map snd table
+                                 os = S.foldl S.union S.empty es
                                  om = S.foldl (\m o -> M.insert o (smallestWith o es) m)
                                       M.empty
                                       os
@@ -210,8 +215,8 @@ insertAttr (attr, ext) table =
                           r = (S.insert a attr, extent)
                       in table V.// [(j, r)]
     addIntersects :: AttrId -> Set ObjId -> AETable -> AETable
-    addIntersects a e t = let current = V.map (snd) t
-                              new = V.filter (\s -> (not $ S.null s) && (V.notElem s current)) $ V.map (S.intersection e) current
+    addIntersects a e t = let current = V.map snd t
+                              new = V.filter (\s -> (not . S.null $ s) && V.notElem s current) $ V.map (S.intersection e) current
                           in (t V.++) $ V.map (\x -> (S.empty, x)) new
 
 -- * Utilities
@@ -221,7 +226,7 @@ insertAttr (attr, ext) table =
 -- This is partial.
 smallestWith :: Ord e => e -> Set (Set e) -> Set e
 smallestWith e ss = let candidates = S.filter (S.member e) ss
-                        smallest = head $ sortBy (\x y -> compare (S.size x) (S.size y)) $ S.toList candidates
+                        smallest = minimumBy (compare `on` S.size) $ S.toList candidates
                     in smallest
 
 -- | Filter the elements @e@ of @s@ by whether or not @m@ maps @e@ to @s@.
