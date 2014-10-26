@@ -31,17 +31,48 @@ Usage
 -----
 
 The package includes a library which implements and exports almost all
-functionality and an executable, called `fca` which provides a command-line
+functionality and an executable, called `fca`, which provides a command-line
 interface.
 
+````
+fca - formal concept analysis
 
-Presentation
-------------
+Usage: fca [-f|--format ea|eav|tab] [-o|--output FILE] [FILE]
+  Generate the concept lattice which describs a data set.
 
-I gave a presentation about this software to the FP-Syd functional
-programming group in Sydney in November 2013. Some of the materials
-can be found in the `presentation/` directory along with a `Makefile`
-which will convert the Markdown text of `presentation.md` into HTML.
+Available options:
+  -h,--help                Show this help text
+  -f,--format ea|eav|tab   Input data format. (default: EAV)
+  -o,--output FILE         Write output to FILE. (default: stdout)
+  FILE                     Read input from FILE. (default: stdin)
+````
 
-The code is commented and the presentation gives some of the details
-of the algorithm and its implementation.
+Input data must be supplied in one of three similar CSV formats:
+
+- entity-attribute format consists of two columns: an object name and an
+attribute name.
+
+- entity-attribute-value format consists of three columns: an object name, an
+attribute name, and an attribute value. The attribute name and value will be
+concatenated to form an attribute suitable for processing.
+
+- tabular format consists of a matrix with objects as rows and attributes as
+columns; the header row and column contain the names, and a non-empty cell
+represents the presence of an attribute at an object.
+
+Examples of the three formats can be found in the `data/` directory:
+
+- `fruit.txt` contains a summary of the data;
+
+- `fruit.csv` contains the tabular format;
+
+- `fruit.ea` contains the entity-attribute format; and
+
+- `fruit.eav` contains the entity-attribute-value format.
+
+In all three cases, the object and attribute names have been abbreviated and,
+when processed, result in the same output.
+
+The output is a graph of the concept lattice in [Graphviz][graphviz] format.
+
+[graphviz]: http://graphviz.org/
