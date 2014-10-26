@@ -79,6 +79,18 @@ toTranslation v =
         ti = foldl (\m (i,n)-> M.insert n i m) M.empty l
     in (it, ti)
 
+-- * Input handling
+
+-- $ An input data set can be provided in three different formats:
+--
+-- * entity-attribute pairs are the "native" format;
+--
+-- * entity-attribute-value triples are converted to entity-attribute by
+-- concatenating the attribute and value; and
+--
+-- * tabular data describes an adjacency matrix between entities (rows) and
+-- attributes (columns).
+
 -- | Parse entity-attribute formatted data into a 'Frame'.
 parseEA :: Vector (Text, Text) -> Frame
 parseEA csv =
@@ -118,7 +130,12 @@ parseTabular csv =
     extract :: (a,b,c) -> (a,b)
     extract (a,b,_) = (a,b)
 
--- | Construct the attribute/extent table of a context.
+-- * Algorithms
+
+-- $ These functions implement the key details of the concept lattice
+-- construction algorithm.
+
+-- | Construct the attribute-extent table of a context.
 buildAETable :: Context -> AETable
 buildAETable ctx = let g = V.foldl (\s v-> S.union s $ snd v) S.empty ctx
                        t = snd $ work ctx $ V.singleton (S.empty, g)
@@ -129,14 +146,15 @@ buildAETable ctx = let g = V.foldl (\s v-> S.union s $ snd v) S.empty ctx
                      (\(a, ctx') -> work ctx' $ insertAttr a table)
                      (chooseMax ctx)
 
--- | Generate 'dot' code of the concept lattice based on a attribue/extent
--- table.
+-- | Construct a lattice from an attribute-extent table and generate a `dot`
+-- graph describing it.
 --
 -- Points in the generated graph are labelled with names from the input data.
-generateGraph :: AETable          -- ^ Context lattice table.
-              -> Map ObjId Name   -- ^ Map from object ID to name.
-              -> Map AttrId Name  -- ^ Map from attribute ID to name.
-              -> Text
+generateGraph
+    :: AETable          -- ^ Context lattice table.
+    -> Map ObjId Name   -- ^ Map from object ID to name.
+    -> Map AttrId Name  -- ^ Map from attribute ID to name.
+    -> Text
 generateGraph table omap amap =
   let list   = zip [0..] $ V.toList table
       list'  = zip [0..] $ V.toList $ restrictObjectLabels table
@@ -147,25 +165,27 @@ generateGraph table omap amap =
                           ]
   where
     -- | Generate a @dot@ fragment for the node.
-    graphNode (i, (as, os)) = let attrns = map (amap M.!) $ S.toList as
-                                  objns = map (omap M.!) $ S.toList os
-                                  label = fromText "xlabel=\"" `mappend`
-                                          (mconcat . intersperse (fromText " ") $ map fromLazyText $ attrns ++ objns) `mappend`
-                                          fromText "\""
-                              in mconcat [ fromText "\tc" , decimal i
-                                         , fromText " [label=\"\","
-                                         , label
-                                         , fromText " ];\n\n"
-                                         ]
+    graphNode (i, (as, os)) =
+        let attrns = map (amap M.!) $ S.toList as
+            objns = map (omap M.!) $ S.toList os
+            label = fromText "xlabel=\"" <>
+                    (mconcat . intersperse (fromText " ") $ map fromLazyText $ attrns ++ objns) <>
+                    fromText "\""
+        in mconcat [ fromText "\tc" , decimal i
+                   , fromText " [label=\"\","
+                   , label
+                   , fromText " ];\n\n"
+                   ]
     -- | Generate a @dot@ fragment for the edges of a node.
-    graphEdges list (i, (as, os)) = let t = True
-                                        targets = covering os $ take i list
-                                        e i j = mconcat [ fromText "\tc", decimal i, fromText " -> c", decimal j, fromText ";\n"]
-                                    in mconcat [ fromText "\t# Edges for c"
-                                               , decimal i
-                                               , fromText "\n"
-                                               , mconcat $ map (e i . fst) targets
-                                               ]
+    graphEdges list (i, (as, os)) =
+        let t = True
+            targets = covering os $ take i list
+            e i j = mconcat [ fromText "\tc", decimal i, fromText " -> c", decimal j, fromText ";\n"]
+        in mconcat [ fromText "\t# Edges for c"
+                   , decimal i
+                   , fromText "\n"
+                   , mconcat $ map (e i . fst) targets
+                   ]
     -- | Find nodes which cover another.
     covering :: Set Int
              -> [(Int, (Set Int, Set Int))]
@@ -176,6 +196,8 @@ generateGraph table omap amap =
         in cover
       where
         localSubsetOf (_,(_,s)) (_,(_,t)) = s `S.isProperSubsetOf` t
+
+-- * Utilities
 
 -- | Select the maximal attribute in the context.
 --
@@ -188,12 +210,13 @@ chooseMax ctx = flip vselect ctx <$> V.findIndex (f ctx) ctx
 
 -- | Filter the labels in a table such that nodes are mentioned only in the
 -- smallest extent which contains them.
-restrictObjectLabels table = let es = V.foldl (flip S.insert) S.empty $ V.map snd table
-                                 os = S.foldl S.union S.empty es
-                                 om = S.foldl (\m o -> M.insert o (smallestWith o es) m)
-                                      M.empty
-                                      os
-                             in V.map (\(as,os) -> (as, filterSetByMap os om)) table
+restrictObjectLabels table =
+    let es = V.foldl (flip S.insert) S.empty $ V.map snd table
+        os = S.foldl S.union S.empty es
+        om = S.foldl (\m o -> M.insert o (smallestWith o es) m)
+             M.empty
+             os
+    in V.map (\(as,os) -> (as, filterSetByMap os om)) table
 
 -- | Insert a new attribute and it's extent into the table.
 --
@@ -219,15 +242,14 @@ insertAttr (attr, ext) table =
                               new = V.filter (\s -> (not . S.null $ s) && V.notElem s current) $ V.map (S.intersection e) current
                           in (t V.++) $ V.map (\x -> (S.empty, x)) new
 
--- * Utilities
-
 -- | Find the smallest set containing an element.
 --
 -- This is partial.
 smallestWith :: Ord e => e -> Set (Set e) -> Set e
-smallestWith e ss = let candidates = S.filter (S.member e) ss
-                        smallest = minimumBy (compare `on` S.size) $ S.toList candidates
-                    in smallest
+smallestWith e ss =
+    let candidates = S.filter (S.member e) ss
+        smallest = minimumBy (compare `on` S.size) $ S.toList candidates
+    in smallest
 
 -- | Filter the elements @e@ of @s@ by whether or not @m@ maps @e@ to @s@.
 --
