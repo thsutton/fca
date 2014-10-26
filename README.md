@@ -64,7 +64,7 @@ Examples of the three formats can be found in the `data/` directory:
 
 - `fruit.txt` contains a summary of the data;
 
-- `fruit.csv` contains the tabular format;
+- `fruit.tab` contains the tabular format;
 
 - `fruit.ea` contains the entity-attribute format; and
 
