@@ -1,6 +1,8 @@
 name:                fca
 version:             0.1.0.0
-synopsis:            Toy implementation of formal concept analysis in Haskell.
+synopsis:            Toy implementation of formal concept analysis.
+description:
+  Use formal concept analysis to generate the concept lattice of a data set.
 homepage:            https://github.com/thsutton/fca/
 license:             BSD3
 license-file:        LICENSE
@@ -11,6 +13,10 @@ category:            Data
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
+
+source-repository head
+  type:                git
+  location:            https://github.com/thsutton/fca.git
 
 library
   hs-source-dirs:      lib
