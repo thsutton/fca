@@ -5,7 +5,8 @@ module Main where
 import           Control.Applicative
 import qualified Data.ByteString.Lazy as BS
 import           Data.Csv
-import qualified Data.Set             as S
+import           Data.List            (nub, sort)
+import qualified Data.Map             as M
 import           Data.Text.Lazy       (Text)
 import           Data.Vector          (Vector)
 import qualified Data.Vector          as V
@@ -13,15 +14,6 @@ import           System.IO
 import           Test.Hspec
 
 import Data.FCA
-
--- | A piece of test data.
-v :: Context
-v = V.fromList [ (1, S.fromList [2,3])
-               , (2, S.fromList [1,2,3])
-               , (3, S.fromList [1,2])
-               , (4, S.fromList [3])
-               , (5, S.fromList [2,3,5])
-               ]
 
 -- | Test data for translations.
 names, names1, names2 :: Vector Text
@@ -46,6 +38,14 @@ formatsSpec = do
 
             omap1 `shouldBe` omap2
 
+        it "filters duplicates in the input" $ do
+            let (omap, imap) = toTranslation names
+
+            let unique = nub . sort . V.toList $ names
+
+            unique `shouldBe` M.keys imap
+            unique `shouldBe` (nub . sort . M.fold (:) [] $ omap)
+
     describe "Reading input formats" $ do
         it "should read EA and EAV identically" $ do
             -- Open all three input files.
@@ -64,7 +64,7 @@ formatsSpec = do
         it "should read EA and TAB identically" $ do
             -- Open all three input files.
             eaH  <- openFile "data/fruit.ea" ReadMode
-            tabH <- openFile "data/fruit.csv" ReadMode
+            tabH <- openFile "data/fruit.tab" ReadMode
 
             -- Parse the CSV contents.
             eaCSV  <- either error id . decode NoHeader <$> BS.hGetContents eaH
@@ -78,7 +78,7 @@ formatsSpec = do
         it "should read EAV and TAB identically" $ do
             -- Open all three input files.
             eavH <- openFile "data/fruit.eav" ReadMode
-            tabH <- openFile "data/fruit.csv" ReadMode
+            tabH <- openFile "data/fruit.tab" ReadMode
 
             -- Parse the CSV contents.
             eavCSV <- either error id . decode NoHeader <$> BS.hGetContents eavH
@@ -118,7 +118,7 @@ formatsSpec = do
         it "should result in the same graph for EA and TAB input" $ do
             -- Open all three input files.
             eaH  <- openFile "data/fruit.ea" ReadMode
-            tabH <- openFile "data/fruit.csv" ReadMode
+            tabH <- openFile "data/fruit.tab" ReadMode
 
             -- Parse the CSV contents.
             eaCSV  <- either error id . decode NoHeader <$> BS.hGetContents eaH
@@ -141,7 +141,7 @@ formatsSpec = do
         it "should result in the same graph for EAV and TAB input" $ do
             -- Open all three input files.
             eavH <- openFile "data/fruit.eav" ReadMode
-            tabH <- openFile "data/fruit.csv" ReadMode
+            tabH <- openFile "data/fruit.tab" ReadMode
 
             -- Parse the CSV contents.
             eavCSV <- either error id . decode NoHeader <$> BS.hGetContents eavH
