@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards   #-}
 {- |
 Module: Main
 Maintainer: Thomas Sutton
@@ -12,12 +12,12 @@ module Main where
 
 import           Control.Applicative
 import qualified Data.ByteString.Lazy as BL
-import           Data.Csv hiding (Parser, Name)
+import           Data.Csv             hiding (Name, Parser)
 import qualified Data.Text.Lazy.IO    as T
 import           Options.Applicative
 import           System.IO
 
-import           Data.FCA
+import Data.FCA
 
 -- | Options for invocation, generally constructed from command-line options.
 data Options = Options

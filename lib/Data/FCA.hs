@@ -13,19 +13,19 @@ helped me (rather: is helping me) to understand to topic.
 -}
 module Data.FCA where
 
-import           Data.List                  (intersperse, sort, sortBy, nub)
-import           Data.Map.Strict            (Map)
-import qualified Data.Map.Strict            as M
+import           Data.List                   (intersperse, nub, sort, sortBy)
+import           Data.Map.Strict             (Map)
+import qualified Data.Map.Strict             as M
 import           Data.Maybe
 import           Data.Monoid
-import           Data.Set                   (Set)
-import qualified Data.Set                   as S
-import           Data.Text.Lazy             (Text)
-import qualified Data.Text.Lazy             as T
+import           Data.Set                    (Set)
+import qualified Data.Set                    as S
+import           Data.Text.Lazy              (Text)
+import qualified Data.Text.Lazy              as T
 import           Data.Text.Lazy.Builder
 import           Data.Text.Lazy.Builder.Int
-import           Data.Vector                (Vector)
-import qualified Data.Vector                as V
+import           Data.Vector                 (Vector)
+import qualified Data.Vector                 as V
 import qualified Data.Vector.Algorithms.Heap as V
 
 -- * Data types
@@ -60,8 +60,8 @@ type AERow = (Set AttrId, Set ObjId)
 -- | A 'Frame' couples a 'Context' together with the maps to translate object
 -- and attribute IDs back to input strings.
 data Frame = Frame
-    { frameContext :: Context
-    , frameObjects :: Map ObjId Name
+    { frameContext    :: Context
+    , frameObjects    :: Map ObjId Name
     , frameAttributes :: Map AttrId Name
     }
   deriving (Show, Eq)
@@ -69,9 +69,9 @@ data Frame = Frame
 -- * Internal
 
 -- | Build maps to translate unique 'Text' values to and from 'Int's.
-toMap :: Vector Text -> (Map Int Text, Map Text Int)
-toMap v =
-    let l = zip [0..] $ nub $ V.toList v
+toTranslation :: Vector Text -> (Map Int Text, Map Text Int)
+toTranslation v =
+    let l = zip [0..] $ sort $ nub $ V.toList v
         it = foldl (\m (i,n)-> M.insert i n m) M.empty l
         ti = foldl (\m (i,n)-> M.insert n i m) M.empty l
     in (it, ti)
@@ -79,8 +79,8 @@ toMap v =
 -- | Parse entity-attribute formatted data into a 'Frame'.
 parseEA :: Vector (Text, Text) -> Frame
 parseEA csv =
-    let (omap, romap) = toMap $ V.map fst csv
-        (amap, ramap) = toMap $ V.map snd csv
+    let (omap, romap) = toTranslation $ V.map fst csv
+        (amap, ramap) = toTranslation $ V.map snd csv
         fn (o,a) m = M.alter (Just . maybe (S.singleton o) (S.insert o)) a m
         ctx' = V.foldr fn M.empty csv
         ctx = V.fromList $ sort $ map (\(k,v) -> (fromJust (M.lookup k ramap), S.map (fromJust . flip M.lookup romap) v )) $ M.toList ctx'
@@ -100,35 +100,20 @@ parseEAV csv =
 -- Note that this function assumes that the input data is rectangular.
 parseTabular :: Vector (Vector Name) -> Frame
 parseTabular csv =
-    let as      = V.modify V.sort . V.tail $ V.head csv
-        os      = V.modify V.sort . V.map V.head $ V.tail csv
-        -- Build maps to translate names to IDs for objects and attributes.
-        anames  = V.fromList . nub . V.toList $ as
-        onames  = V.fromList . nub . V.toList $ os
-        (atr,amap) = V.ifoldl translationMaps (M.empty, M.empty) $ anames
-        (otr,omap) = V.ifoldl translationMaps (M.empty, M.empty) $ onames
-        -- Build the context uses the data and the translation maps.
-        na      = V.length as
-        ctx     = V.generate na (attr atr otr csv)
-     in Frame ctx omap amap
+    let attrs = V.toList . V.tail . V.head $ csv
+        values = concatMap (convert attrs) . V.toList . V.tail $ csv
+    in parseEA . V.fromList $ values
   where
-    -- | Extend a pair of translation maps with a new name and index.
-    translationMaps (it,ot) i n = (M.insert n i it, M.insert i n ot)
-
-    isSet :: Text -> Bool
-    isSet = T.null
-
-    -- | Generate the extent set for an attribute.
-    attr
-        :: Map Text AttrId
-        -> Map Text ObjId
-        -> Vector (Vector Text)
-        -> AttrId
-        -> (AttrId, Set ObjId)
-    attr amap omap rows a =
-        let col = V.tail $ rows V.! (a + 1)
-            extent = V.ifoldl (\s i row -> if (isSet $ row V.! a) then s else S.insert i s) S.empty rows
-        in (a, extent)
+    convert :: [Text] -> Vector Text -> [(Text, Text)]
+    convert attrs object =
+        let obj   = V.head object
+            vals  = V.toList . V.tail $ object
+            pairs = map extract . filter (not . T.null . thrd) $ zip3 (repeat obj) attrs vals
+        in pairs
+    thrd :: (a,b,c) -> c
+    thrd (_,_,c) = c
+    extract :: (a,b,c) -> (a,b)
+    extract (a,b,_) = (a,b)
 
 -- | Construct the attribute/extent table of a context.
 buildAETable :: Context -> AETable
