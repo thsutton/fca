@@ -13,6 +13,10 @@ Priestley (Chapter 3: Formal Concept Analysis).
 
 [book]: http://amzn.to/1nZgMdu
 
+![A concept lattice][eg1]
+
+[eg1]: https://raw.githubusercontent.com/thsutton/fca/master/example/fruit.png)
+
 Installation
 ------------
 
