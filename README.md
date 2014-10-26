@@ -15,7 +15,7 @@ Priestley (Chapter 3: Formal Concept Analysis).
 
 ![A concept lattice][eg1]
 
-[eg1]: https://raw.githubusercontent.com/thsutton/fca/master/example/fruit.png)
+[eg1]: https://raw.githubusercontent.com/thsutton/fca/master/example/fruit.png
 
 Installation
 ------------
