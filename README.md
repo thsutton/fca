@@ -13,8 +13,8 @@ Priestley (Chapter 3: Formal Concept Analysis).
 
 [book]: http://amzn.to/1nZgMdu
 
-Software
---------
+Installation
+------------
 
 The `fca` software is written in Haskell and can be compiled using the normal
 Haskell tools:
