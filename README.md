@@ -20,8 +20,8 @@ Priestley (Chapter 3: Formal Concept Analysis).
 Installation
 ------------
 
-The `fca` software is written in Haskell and can be compiled using the normal
-Haskell tools:
+This package is written in Haskell and can be compiled using the normal Haskell
+tools:
 
 ````{.shell}
 cabal configure
@@ -30,6 +30,10 @@ cabal test
 cabal haddock --executables
 cabal install
 ````
+
+It provides both an executable for use at the command-line and a library. While
+it exports all the core functionality, the library is unlikely to be of use in
+other code.
 
 Usage
 -----
