@@ -1,7 +1,7 @@
 name:                fca
 version:             0.1.0.0
 synopsis:            Toy implementation of formal concept analysis in Haskell.
-homepage:            http://passingcuriosity.com/fca/
+homepage:            https://github.com/thsutton/fca/
 license:             BSD3
 license-file:        LICENSE
 author:              Thomas Sutton
