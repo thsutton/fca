@@ -5,7 +5,6 @@ module Main where
 import           Control.Applicative
 import qualified Data.ByteString.Lazy as BS
 import           Data.Csv
-import           Data.Monoid
 import qualified Data.Set             as S
 import           Data.Text.Lazy       (Text)
 import           Data.Vector          (Vector)
@@ -90,22 +89,77 @@ formatsSpec = do
 
             eav `shouldBe` tab
 
-        it "should read EAV data correctly" $ do
-            pending
-            input <- openFile "data/fruit.eav" ReadMode
-            csv <- decode NoHeader <$> BS.hGetContents input
-            let frame = either (error) (parseEAV) csv
-            frame `shouldBe` (Frame mempty mempty mempty)
+    describe "Graph generation" $ do
+        it "should result in the same graph for EA and EAV input" $ do
+            -- Open all three input files.
+            eaH  <- openFile "data/fruit.ea" ReadMode
+            eavH <- openFile "data/fruit.eav" ReadMode
 
-        it "should read tabular data correctly" $ do
-            input <- openFile "data/fruit.csv" ReadMode
-            hClose input
-            pendingWith "not implemented"
+            -- Parse the CSV contents.
+            eaCSV  <- either error id . decode NoHeader <$> BS.hGetContents eaH
+            eavCSV <- either error id . decode NoHeader <$> BS.hGetContents eavH
 
-        it "should read EA data correctly" $ do
-            input <- openFile "data/fruit.ea" ReadMode
-            hClose input
-            pendingWith "not implemented"
+            -- Build the frame.
+            let Frame eaC eaO eaA    = parseEA eaCSV
+            let Frame eavC eavO eavA = parseEAV eavCSV
+
+            -- Generate the attribute-extent tables.
+            let eaT = buildAETable eaC
+            let eavT = buildAETable eavC
+
+            -- Generate the graphs.
+            let eaG = generateGraph eaT eaO eaA
+            let eavG = generateGraph eavT eavO eavA
+
+            eaG `shouldBe` eavG
+
+
+
+        it "should result in the same graph for EA and TAB input" $ do
+            -- Open all three input files.
+            eaH  <- openFile "data/fruit.ea" ReadMode
+            tabH <- openFile "data/fruit.csv" ReadMode
+
+            -- Parse the CSV contents.
+            eaCSV  <- either error id . decode NoHeader <$> BS.hGetContents eaH
+            tabCSV <- either error id . decode NoHeader <$> BS.hGetContents tabH
+
+            -- Build the frame.
+            let Frame eaC eaO eaA    = parseEA eaCSV
+            let Frame tabC tabO tabA = parseTabular tabCSV
+
+            -- Generate the attribute-extent tables.
+            let eaT = buildAETable eaC
+            let tabT = buildAETable tabC
+
+            -- Generate the graphs.
+            let eaG = generateGraph eaT eaO eaA
+            let tabG = generateGraph tabT tabO tabA
+
+            eaG `shouldBe` tabG
+
+        it "should result in the same graph for EAV and TAB input" $ do
+            -- Open all three input files.
+            eavH <- openFile "data/fruit.eav" ReadMode
+            tabH <- openFile "data/fruit.csv" ReadMode
+
+            -- Parse the CSV contents.
+            eavCSV <- either error id . decode NoHeader <$> BS.hGetContents eavH
+            tabCSV <- either error id . decode NoHeader <$> BS.hGetContents tabH
+
+            -- Generate the frame.
+            let Frame eavC eavO eavA = parseEAV eavCSV
+            let Frame tabC tabO tabA = parseTabular tabCSV
+
+            -- Generate the attribute-extent tables.
+            let eavT = buildAETable eavC
+            let tabT = buildAETable tabC
+
+            -- Generate the graphs.
+            let eavG = generateGraph eavT eavO eavA
+            let tabG = generateGraph tabT tabO tabA
+
+            eavG `shouldBe` tabG
 
 main :: IO ()
 main = do
