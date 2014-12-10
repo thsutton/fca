@@ -96,7 +96,7 @@ parseEA :: Vector (Text, Text) -> Frame
 parseEA csv =
     let (omap, romap) = toTranslation $ V.map fst csv
         (amap, ramap) = toTranslation $ V.map snd csv
-        fn (o,a) m = M.alter (Just . maybe (S.singleton o) (S.insert o)) a m
+        fn (o,a) = M.alter (Just . maybe (S.singleton o) (S.insert o)) a
         ctx' = V.foldr fn M.empty csv
         ctx = V.fromList $ sort $ map (\(k,v) -> (fromJust (M.lookup k ramap), S.map (fromJust . flip M.lookup romap) v )) $ M.toList ctx'
     in Frame ctx omap amap
@@ -192,7 +192,7 @@ generateGraph table omap amap =
              -> [(Int, (Set Int, Set Int))]
     covering s ss =
         let candidates = filter (localSubsetOf (1,(S.empty,s))) ss
-            cover = filter (\c -> not $ any (flip localSubsetOf c) candidates) candidates
+            cover = filter (\c -> not $ any (`localSubsetOf` c) candidates) candidates
         in cover
       where
         localSubsetOf (_,(_,s)) (_,(_,t)) = s `S.isProperSubsetOf` t

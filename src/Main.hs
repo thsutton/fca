@@ -84,8 +84,8 @@ optionsP = Options <$> pure False
 -- | Open input and output handles based on command-line options.
 getHandles :: Options -> IO (Handle, Handle)
 getHandles Options{..} = do
-    inH <- maybe (return stdin) (flip openFile ReadMode) optInput
-    outH <- maybe (return stdout) (flip openFile WriteMode) optOutput
+    inH <- maybe (return stdin) (`openFile` ReadMode) optInput
+    outH <- maybe (return stdout) (`openFile` WriteMode) optOutput
     return (inH, outH)
 
 -- | Get a function to read data in the specified format.
