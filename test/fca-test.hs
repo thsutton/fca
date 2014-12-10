@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Main where
 
@@ -17,8 +18,7 @@ import Data.FCA
 
 -- | Test data for translations.
 names, names1, names2 :: Vector Text
-
-names = V.fromList ["abcd", "defg", "abcd", "ghij", "abcd", "jklm"]
+names  = V.fromList ["abcd", "defg", "abcd", "ghij", "abcd", "jklm"]
 names1 = names
 names2 = V.reverse names
 
@@ -48,117 +48,72 @@ formatsSpec = do
 
     describe "Reading input formats" $ do
         it "should read EA and EAV identically" $ do
-            -- Open all three input files.
-            eaH  <- openFile "data/fruit.ea" ReadMode
-            eavH <- openFile "data/fruit.eav" ReadMode
-
-            -- Parse the CSV contents.
-            eaCSV  <- either error id . decode NoHeader <$> BS.hGetContents eaH
-            eavCSV <- either error id . decode NoHeader <$> BS.hGetContents eavH
-
-            let ea  = parseEA eaCSV
-            let eav = parseEAV eavCSV
+            eav <- readEAV "data/fruit.eav"
+            ea  <- readEA  "data/fruit.ea"
 
             ea `shouldBe` eav
 
         it "should read EA and TAB identically" $ do
-            -- Open all three input files.
-            eaH  <- openFile "data/fruit.ea" ReadMode
-            tabH <- openFile "data/fruit.tab" ReadMode
-
-            -- Parse the CSV contents.
-            eaCSV  <- either error id . decode NoHeader <$> BS.hGetContents eaH
-            tabCSV <- either error id . decode NoHeader <$> BS.hGetContents tabH
-
-            let ea  = parseEA eaCSV
-            let tab = parseTabular tabCSV
+            ea  <- readEA  "data/fruit.ea"
+            tab <- readTab "data/fruit.tab"
 
             ea `shouldBe` tab
 
         it "should read EAV and TAB identically" $ do
-            -- Open all three input files.
-            eavH <- openFile "data/fruit.eav" ReadMode
-            tabH <- openFile "data/fruit.tab" ReadMode
-
-            -- Parse the CSV contents.
-            eavCSV <- either error id . decode NoHeader <$> BS.hGetContents eavH
-            tabCSV <- either error id . decode NoHeader <$> BS.hGetContents tabH
-
-            let eav = parseEAV eavCSV
-            let tab = parseTabular tabCSV
+            eav <- readEAV "data/fruit.eav"
+            tab <- readTab "data/fruit.tab"
 
             eav `shouldBe` tab
 
     describe "Graph generation" $ do
         it "should result in the same graph for EA and EAV input" $ do
-            -- Open all three input files.
-            eaH  <- openFile "data/fruit.ea" ReadMode
-            eavH <- openFile "data/fruit.eav" ReadMode
+            f1 <- readEA  "data/fruit.ea"
+            f2 <- readEAV "data/fruit.eav"
 
-            -- Parse the CSV contents.
-            eaCSV  <- either error id . decode NoHeader <$> BS.hGetContents eaH
-            eavCSV <- either error id . decode NoHeader <$> BS.hGetContents eavH
-
-            -- Build the frame.
-            let Frame eaC eaO eaA    = parseEA eaCSV
-            let Frame eavC eavO eavA = parseEAV eavCSV
-
-            -- Generate the attribute-extent tables.
-            let eaT = buildAETable eaC
-            let eavT = buildAETable eavC
-
-            -- Generate the graphs.
-            let eaG = generateGraph eaT eaO eaA
-            let eavG = generateGraph eavT eavO eavA
-
-            eaG `shouldBe` eavG
+            graphsShouldBeEqual f1 f2
 
         it "should result in the same graph for EA and TAB input" $ do
-            -- Open all three input files.
-            eaH  <- openFile "data/fruit.ea" ReadMode
-            tabH <- openFile "data/fruit.tab" ReadMode
+            f1 <- readEA  "data/fruit.ea"
+            f2 <- readTab "data/fruit.tab"
 
-            -- Parse the CSV contents.
-            eaCSV  <- either error id . decode NoHeader <$> BS.hGetContents eaH
-            tabCSV <- either error id . decode NoHeader <$> BS.hGetContents tabH
-
-            -- Build the frame.
-            let Frame eaC eaO eaA    = parseEA eaCSV
-            let Frame tabC tabO tabA = parseTabular tabCSV
-
-            -- Generate the attribute-extent tables.
-            let eaT = buildAETable eaC
-            let tabT = buildAETable tabC
-
-            -- Generate the graphs.
-            let eaG = generateGraph eaT eaO eaA
-            let tabG = generateGraph tabT tabO tabA
-
-            eaG `shouldBe` tabG
+            graphsShouldBeEqual f1 f2
 
         it "should result in the same graph for EAV and TAB input" $ do
-            -- Open all three input files.
-            eavH <- openFile "data/fruit.eav" ReadMode
-            tabH <- openFile "data/fruit.tab" ReadMode
+            f1 <- readEAV "data/fruit.eav"
+            f2 <- readTab "data/fruit.tab"
 
-            -- Parse the CSV contents.
-            eavCSV <- either error id . decode NoHeader <$> BS.hGetContents eavH
-            tabCSV <- either error id . decode NoHeader <$> BS.hGetContents tabH
+            graphsShouldBeEqual f1 f2
 
-            -- Generate the frame.
-            let Frame eavC eavO eavA = parseEAV eavCSV
-            let Frame tabC tabO tabA = parseTabular tabCSV
+-- | Use a given parser to load a 'Frame'
+loadWithParser :: FromRecord a => (Vector a -> Frame) -> FilePath -> IO Frame
+loadWithParser p f = withFile f ReadMode $ \h -> do
+    !csv <- either error id . decode NoHeader <$> BS.hGetContents h
+    let frame = p csv
+    return frame
 
-            -- Generate the attribute-extent tables.
-            let eavT = buildAETable eavC
-            let tabT = buildAETable tabC
+readEA :: FilePath -> IO Frame
+readEA = loadWithParser parseEA
 
-            -- Generate the graphs.
-            let eavG = generateGraph eavT eavO eavA
-            let tabG = generateGraph tabT tabO tabA
+readEAV :: FilePath -> IO Frame
+readEAV  = loadWithParser parseEAV
 
-            eavG `shouldBe` tabG
+readTab :: FilePath -> IO Frame
+readTab = loadWithParser parseTabular
+
+-- | Check that the graphs generated by two frames are equal.
+graphsShouldBeEqual :: Frame -> Frame -> IO ()
+graphsShouldBeEqual (Frame f1C f1O f1A) (Frame f2C f2O f2A) = do
+    -- Generate the attribute-extent tables.
+    let f1T = buildAETable f1C
+    let f2T = buildAETable f2C
+
+    -- Generate the graphs.
+    let f1G = generateGraph f1T f1O f1A
+    let f2G = generateGraph f2T f2O f2A
+
+    f1G `shouldBe` f2G
+
+
 
 main :: IO ()
 main = hspec formatsSpec
-
